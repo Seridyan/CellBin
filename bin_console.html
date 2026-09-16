@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bin Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EDEFE9;
+    --bg-panel: #E2E5DA;
+    --bg-field: #F6F7F2;
+    --text: #1E221C;
+    --text-muted: #5B6157;
+    --accent: #A87C1E;
+    --accent-text: #24200E;
+    --ok: #3F7A5A;
+    --warn: #B14A34;
+    --border: #C7CBBD;
+    --focus: #2E5FA3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171A;
+      --bg-panel: #1E2219;
+      --bg-field: #1A1D16;
+      --text: #E9E7DC;
+      --text-muted: #9AA093;
+      --accent: #E0B23F;
+      --accent-text: #201A05;
+      --ok: #5FAE84;
+      --warn: #E1684B;
+      --border: #33392C;
+      --focus: #7AAAE8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171A;
+    --bg-panel: #1E2219;
+    --bg-field: #1A1D16;
+    --text: #E9E7DC;
+    --text-muted: #9AA093;
+    --accent: #E0B23F;
+    --accent-text: #201A05;
+    --ok: #5FAE84;
+    --warn: #E1684B;
+    --border: #33392C;
+    --focus: #7AAAE8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+
+  .tagline {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0 0 28px;
+  }
+
+  /* ---- hero connection panel ---- */
+  .conn-panel {
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 28px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+  }
+
+  .conn-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+  }
+  .dot.connected { background: var(--ok); }
+  .dot.connecting { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .conn-status-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .device-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 2px 0 16px;
+    word-break: break-all;
+  }
+
+  button {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    border-radius: 7px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: transform 0.06s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.98); }
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    width: 100%;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    width: 100%;
+  }
+
+  .btn-small {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .btn-small:hover { border-color: var(--text-muted); }
+
+  /* ---- sections ---- */
+  section { margin-bottom: 26px; }
+
+  .section-title {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .row:last-child { border-bottom: none; }
+
+  .row-label {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .row-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.92rem;
+    text-align: right;
+  }
+
+  .row-value.warn { color: var(--warn); font-weight: 500; }
+  .row-value.ok { color: var(--ok); font-weight: 500; }
+
+  /* ---- editable fields ---- */
+  .field {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .field:last-child { border-bottom: none; }
+
+  .field-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 7px;
+  }
+
+  .field-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.92rem;
+    color: var(--text);
+    background: var(--bg-field);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 10px;
+  }
+  input[type="text"]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+    border-color: var(--focus);
+  }
+
+  .save-state {
+    font-size: 0.72rem;
+    color: var(--ok);
+    margin-top: 5px;
+    height: 14px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .save-state.show { opacity: 1; }
+
+  /* ---- empty / unsupported state ---- */
+  .empty-state {
+    border-radius: 10px;
+    padding: 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+  .empty-state strong { color: var(--text); }
+
+  .hidden { display: none !important; }
+
+  footer {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Bin Console</h1>
+  <p class="tagline">Configure and check on an expLoRaBLE bin over Bluetooth.</p>
+
+  <!-- Unsupported browser notice -->
+  <div id="unsupported" class="empty-state hidden">
+    <strong>This browser can't connect over Bluetooth.</strong><br><br>
+    Open this page in Chrome or Edge on desktop or Android. Bluetooth device access isn't available in Safari or Firefox.
+  </div>
+
+  <!-- Connection panel -->
+  <div id="connPanel" class="conn-panel">
+    <div class="conn-status-row">
+      <span id="connDot" class="dot"></span>
+      <span id="connStatusText" class="conn-status-text">Not connected</span>
+    </div>
+    <div id="deviceId" class="device-id hidden"></div>
+    <button id="connectBtn" class="btn-primary">Connect to bin</button>
+    <button id="disconnectBtn" class="btn-secondary hidden">Disconnect</button>
+  </div>
+
+  <!-- Registers (hidden until connected) -->
+  <div id="registers" class="hidden">
+
+    <section>
+      <div class="section-title">Status</div>
+      <div class="row">
+        <span class="row-label">Full</span>
+        <span id="valFull" class="row-value">—</span>
+      </div>
+      <div class="row">
+        <span class="row-label">Battery</span>
+        <span id="valBatt" class="row-value">—</span>
+      </div>
+      <div class="row">
+        <span class="row-label"></span>
+        <button id="refreshBtn" class="btn-small">Refresh</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Configuration</div>
+
+      <div class="field">
+        <label class="field-label" for="inBinType">Bin type</label>
+        <div class="field-row">
+          <input type="text" id="inBinType" maxlength="15">
+          <button class="btn-small" data-save="binType">Save</button>
+        </div>
+        <div class="save-state" data-savestate="binType">Saved</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="inBinSize">Bin size (liters)</label>
+        <div class="field-row">
+          <input type="text" id="inBinSize" inputmode="numeric" maxlength="7">
+          <button class="btn-small" data-save="binSize">Save</button>
+        </div>
+        <div class="save-state" data-savestate="binSize">Saved</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="inGpsLat">Latitude</label>
+        <div class="field-row">
+          <input type="text" id="inGpsLat" inputmode="decimal" maxlength="15">
+          <button class="btn-small" data-save="gpsLat">Save</button>
+        </div>
+        <div class="save-state" data-savestate="gpsLat">Saved</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="inGpsLon">Longitude</label>
+        <div class="field-row">
+          <input type="text" id="inGpsLon" inputmode="decimal" maxlength="15">
+          <button class="btn-small" data-save="gpsLon">Save</button>
+        </div>
+        <div class="save-state" data-savestate="gpsLon">Saved</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="inStreetAddress">Street address</label>
+        <div class="field-row">
+          <input type="text" id="inStreetAddress" maxlength="47">
+          <button class="btn-small" data-save="streetAddress">Save</button>
+        </div>
+        <div class="save-state" data-savestate="streetAddress">Saved</div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer id="footerNote"></footer>
+</div>
+
+<script>
+(function () {
+  const SERVICE_UUID    = "19b10000-e8f2-537e-4f6c-d104768a1214";
+  const UUID_BIN_TYPE   = "19b10001-e8f2-537e-4f6c-d104768a1214";
+  const UUID_BIN_SIZE   = "19b10002-e8f2-537e-4f6c-d104768a1214";
+  const UUID_GPS_LAT    = "19b10003-e8f2-537e-4f6c-d104768a1214";
+  const UUID_GPS_LON    = "19b10004-e8f2-537e-4f6c-d104768a1214";
+  const UUID_STREET     = "19b10005-e8f2-537e-4f6c-d104768a1214";
+  const UUID_MAC_ID     = "19b10006-e8f2-537e-4f6c-d104768a1214";
+  const UUID_FULL       = "19b10007-e8f2-537e-4f6c-d104768a1214";
+  const UUID_BATT       = "19b10008-e8f2-537e-4f6c-d104768a1214";
+
+  const decoder = new TextDecoder('utf-8');
+  const encoder = new TextEncoder();
+
+  const els = {
+    unsupported: document.getElementById('unsupported'),
+    connPanel: document.getElementById('connPanel'),
+    connDot: document.getElementById('connDot'),
+    connStatusText: document.getElementById('connStatusText'),
+    deviceId: document.getElementById('deviceId'),
+    connectBtn: document.getElementById('connectBtn'),
+    disconnectBtn: document.getElementById('disconnectBtn'),
+    registers: document.getElementById('registers'),
+    valFull: document.getElementById('valFull'),
+    valBatt: document.getElementById('valBatt'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    footerNote: document.getElementById('footerNote'),
+  };
+
+  const fields = {
+    binType:       { input: document.getElementById('inBinType'),       uuid: UUID_BIN_TYPE, char: null },
+    binSize:       { input: document.getElementById('inBinSize'),       uuid: UUID_BIN_SIZE, char: null },
+    gpsLat:        { input: document.getElementById('inGpsLat'),        uuid: UUID_GPS_LAT,  char: null },
+    gpsLon:        { input: document.getElementById('inGpsLon'),        uuid: UUID_GPS_LON,  char: null },
+    streetAddress: { input: document.getElementById('inStreetAddress'), uuid: UUID_STREET,   char: null },
+  };
+
+  let device = null;
+  let macChar = null, fullChar = null, battChar = null;
+
+  function setStatus(state, text) {
+    els.connDot.className = 'dot' + (state ? ' ' + state : '');
+    els.connStatusText.textContent = text;
+  }
+
+  function decodeString(dataView) {
+    return decoder.decode(dataView.buffer);
+  }
+  function decodeBool(dataView) {
+    return dataView.getUint8(0) !== 0;
+  }
+  function decodeFloat(dataView) {
+    return dataView.getFloat32(0, true); // little-endian
+  }
+
+  function showSaved(key) {
+    const el = document.querySelector('[data-savestate="' + key + '"]');
+    if (!el) return;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1600);
+  }
+
+  async function connect() {
+    els.connectBtn.disabled = true;
+    setStatus('connecting', 'Connecting…');
+
+    try {
+      device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [SERVICE_UUID] }],
+        optionalServices: [SERVICE_UUID]
+      });
+
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(SERVICE_UUID);
+
+      for (const key in fields) {
+        fields[key].char = await service.getCharacteristic(fields[key].uuid);
+      }
+      macChar = await service.getCharacteristic(UUID_MAC_ID);
+      fullChar = await service.getCharacteristic(UUID_FULL);
+      battChar = await service.getCharacteristic(UUID_BATT);
+
+      await loadAllValues();
+
+      setStatus('connected', 'Connected to ' + (device.name || 'bin'));
+      els.connectBtn.classList.add('hidden');
+      els.disconnectBtn.classList.remove('hidden');
+      els.registers.classList.remove('hidden');
+    } catch (err) {
+      // NotFoundError = person cancelled the device picker - not a
+      // real error, just reset quietly.
+      if (err.name !== 'NotFoundError') {
+        setStatus('', 'Connection failed: ' + err.message);
+      } else {
+        setStatus('', 'Not connected');
+      }
+    } finally {
+      els.connectBtn.disabled = false;
+    }
+  }
+
+  function disconnect() {
+    if (device && device.gatt.connected) {
+      device.gatt.disconnect();
+    } else {
+      onDisconnected();
+    }
+  }
+
+  function onDisconnected() {
+    setStatus('', 'Not connected');
+    els.deviceId.classList.add('hidden');
+    els.connectBtn.classList.remove('hidden');
+    els.disconnectBtn.classList.add('hidden');
+    els.registers.classList.add('hidden');
+    device = null;
+  }
+
+  async function loadAllValues() {
+    const macVal = await macChar.readValue();
+    els.deviceId.textContent = 'ID ' + decodeString(macVal);
+    els.deviceId.classList.remove('hidden');
+
+    for (const key in fields) {
+      const val = await fields[key].char.readValue();
+      fields[key].input.value = decodeString(val);
+    }
+
+    await refreshStatus();
+  }
+
+  async function refreshStatus() {
+    const fullVal = await fullChar.readValue();
+    const isFull = decodeBool(fullVal);
+    els.valFull.textContent = isFull ? 'Yes' : 'No';
+    els.valFull.className = 'row-value ' + (isFull ? 'warn' : 'ok');
+
+    const battVal = await battChar.readValue();
+    els.valBatt.textContent = decodeFloat(battVal).toFixed(2) + ' V';
+  }
+
+  async function saveField(key) {
+    const f = fields[key];
+    if (!f || !f.char) return;
+    const btn = document.querySelector('[data-save="' + key + '"]');
+    btn.disabled = true;
+    try {
+      await f.char.writeValue(encoder.encode(f.input.value));
+      showSaved(key);
+    } catch (err) {
+      alert('Could not save ' + key + ': ' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ---- wire up events ----
+  els.connectBtn.addEventListener('click', connect);
+  els.disconnectBtn.addEventListener('click', disconnect);
+  els.refreshBtn.addEventListener('click', () => {
+    refreshStatus().catch(err => alert('Refresh failed: ' + err.message));
+  });
+  document.querySelectorAll('[data-save]').forEach(btn => {
+    btn.addEventListener('click', () => saveField(btn.getAttribute('data-save')));
+  });
+
+  // ---- feature check ----
+  if (!navigator.bluetooth) {
+    els.unsupported.classList.remove('hidden');
+    els.connPanel.classList.add('hidden');
+  } else {
+    els.footerNote.textContent = 'Uses the Web Bluetooth API - works in Chrome and Edge.';
+  }
+})();
+</script>
+
+</body>
+</html>
