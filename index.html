@@ -249,6 +249,7 @@
     transition: opacity 0.2s ease;
   }
   .save-state.show { opacity: 1; }
+  .save-state.error { color: var(--warn); }
 
   /* ---- empty / unsupported state ---- */
   .empty-state {
@@ -353,6 +354,11 @@
       </div>
 
       <div class="field">
+        <button id="useLocationBtn" class="btn-secondary">Use my current location</button>
+        <div id="locationStatus" class="save-state" data-savestate="location"></div>
+      </div>
+
+      <div class="field">
         <label class="field-label" for="inStreetAddress">Street address</label>
         <div class="field-row">
           <input type="text" id="inStreetAddress" maxlength="47">
@@ -395,6 +401,8 @@
     valBatt: document.getElementById('valBatt'),
     refreshBtn: document.getElementById('refreshBtn'),
     footerNote: document.getElementById('footerNote'),
+    useLocationBtn: document.getElementById('useLocationBtn'),
+    locationStatus: document.getElementById('locationStatus'),
   };
 
   const fields = {
@@ -526,12 +534,57 @@
     }
   }
 
+  function setLocationStatus(text, isError) {
+    els.locationStatus.textContent = text;
+    els.locationStatus.classList.toggle('error', !!isError);
+    els.locationStatus.classList.add('show');
+    setTimeout(() => els.locationStatus.classList.remove('show'), 2400);
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus('Location isn\'t available in this browser.', true);
+      return;
+    }
+
+    els.useLocationBtn.disabled = true;
+    setLocationStatus('Getting location…', false);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude.toFixed(6);
+        const lon = position.coords.longitude.toFixed(6);
+        fields.gpsLat.input.value = lat;
+        fields.gpsLon.input.value = lon;
+
+        try {
+          await saveField('gpsLat');
+          await saveField('gpsLon');
+        } finally {
+          setLocationStatus('Location saved.', false);
+          els.useLocationBtn.disabled = false;
+        }
+      },
+      (err) => {
+        // err.code: 1 = permission denied, 2 = position unavailable, 3 = timeout
+        let msg = 'Could not get location.';
+        if (err.code === 1) msg = 'Location permission denied.';
+        else if (err.code === 2) msg = 'Location unavailable right now.';
+        else if (err.code === 3) msg = 'Getting location timed out.';
+        setLocationStatus(msg, true);
+        els.useLocationBtn.disabled = false;
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
   // ---- wire up events ----
   els.connectBtn.addEventListener('click', connect);
   els.disconnectBtn.addEventListener('click', disconnect);
   els.refreshBtn.addEventListener('click', () => {
     refreshStatus().catch(err => alert('Refresh failed: ' + err.message));
   });
+  els.useLocationBtn.addEventListener('click', useCurrentLocation);
   document.querySelectorAll('[data-save]').forEach(btn => {
     btn.addEventListener('click', () => saveField(btn.getAttribute('data-save')));
   });
