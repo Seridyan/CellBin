@@ -337,6 +337,15 @@
       </div>
 
       <div class="field">
+        <label class="field-label" for="inFullThreshold">Full threshold (mm) — bin is "full" when closest zone is below this distance</label>
+        <div class="field-row">
+          <input type="text" id="inFullThreshold" inputmode="numeric" maxlength="5" placeholder="150">
+          <button class="btn-small" data-save="fullThreshold">Save</button>
+        </div>
+        <div class="save-state" data-savestate="fullThreshold">Saved</div>
+      </div>
+
+      <div class="field">
         <label class="field-label" for="inBinSize">Bin size (liters)</label>
         <div class="field-row">
           <input type="text" id="inBinSize" inputmode="numeric" maxlength="7">
@@ -397,7 +406,8 @@
   const UUID_MAC_ID     = "19b10006-e8f2-537e-4f6c-d104768a1214";
   const UUID_FULL       = "19b10007-e8f2-537e-4f6c-d104768a1214";
   const UUID_BATT       = "19b10008-e8f2-537e-4f6c-d104768a1214";
-  const UUID_BIN_NUMBER = "19b10009-e8f2-537e-4f6c-d104768a1214";
+  const UUID_BIN_NUMBER    = "19b10009-e8f2-537e-4f6c-d104768a1214";
+  const UUID_FULL_THRESHOLD = "19b1000a-e8f2-537e-4f6c-d104768a1214";
 
   const decoder = new TextDecoder('utf-8');
   const encoder = new TextEncoder();
@@ -421,12 +431,13 @@
   };
 
   const fields = {
-    binType:       { input: document.getElementById('inBinType'),    uuid: UUID_BIN_TYPE,   char: null },
-    binSize:       { input: document.getElementById('inBinSize'),    uuid: UUID_BIN_SIZE,   char: null },
-    binNumber:     { input: document.getElementById('inBinNumber'),  uuid: UUID_BIN_NUMBER, char: null },
-    gpsLat:        { input: document.getElementById('inGpsLat'),     uuid: UUID_GPS_LAT,    char: null },
-    gpsLon:        { input: document.getElementById('inGpsLon'),     uuid: UUID_GPS_LON,    char: null },
-    streetAddress: { input: document.getElementById('inStreetAddress'), uuid: UUID_STREET,  char: null },
+    binType:       { input: document.getElementById('inBinType'),        uuid: UUID_BIN_TYPE,       char: null },
+    binSize:       { input: document.getElementById('inBinSize'),        uuid: UUID_BIN_SIZE,       char: null },
+    binNumber:     { input: document.getElementById('inBinNumber'),      uuid: UUID_BIN_NUMBER,     char: null },
+    fullThreshold: { input: document.getElementById('inFullThreshold'),  uuid: UUID_FULL_THRESHOLD, char: null },
+    gpsLat:        { input: document.getElementById('inGpsLat'),         uuid: UUID_GPS_LAT,        char: null },
+    gpsLon:        { input: document.getElementById('inGpsLon'),         uuid: UUID_GPS_LON,        char: null },
+    streetAddress: { input: document.getElementById('inStreetAddress'),  uuid: UUID_STREET,         char: null },
   };
 
   let device = null;
