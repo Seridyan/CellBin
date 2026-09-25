@@ -389,6 +389,26 @@
         <div class="save-state" data-savestate="streetAddress">Saved</div>
       </div>
 
+      <div class="field">
+        <label class="field-label">LoRa connectivity</label>
+        <button id="pingBtn" class="btn-secondary" style="margin-bottom:8px">
+          Ping LoRa receiver
+        </button>
+        <div id="pingResult" style="
+          font-family:'IBM Plex Mono',monospace;
+          font-size:0.88rem;
+          padding:10px;
+          border-radius:6px;
+          background:var(--bg-field);
+          border:1px solid var(--border);
+          min-height:36px;
+          color:var(--text-muted);
+          display:flex;
+          align-items:center;
+          gap:8px;
+        ">—</div>
+      </div>
+
     </section>
   </div>
 
@@ -408,6 +428,8 @@
   const UUID_BATT       = "19b10008-e8f2-537e-4f6c-d104768a1214";
   const UUID_BIN_NUMBER    = "19b10009-e8f2-537e-4f6c-d104768a1214";
   const UUID_FULL_THRESHOLD = "19b1000a-e8f2-537e-4f6c-d104768a1214";
+  const UUID_PING_TRIGGER   = "19b1000b-e8f2-537e-4f6c-d104768a1214";
+  const UUID_PING_RESULT    = "19b1000c-e8f2-537e-4f6c-d104768a1214";
 
   const decoder = new TextDecoder('utf-8');
   const encoder = new TextEncoder();
@@ -442,6 +464,7 @@
 
   let device = null;
   let macChar = null, fullChar = null, battChar = null;
+  let pingTriggerChar = null, pingResultChar = null;
 
   function setStatus(state, text) {
     els.connDot.className = 'dot' + (state ? ' ' + state : '');
@@ -486,6 +509,9 @@
       macChar = await service.getCharacteristic(UUID_MAC_ID);
       fullChar = await service.getCharacteristic(UUID_FULL);
       battChar = await service.getCharacteristic(UUID_BATT);
+
+      pingTriggerChar = await service.getCharacteristic(UUID_PING_TRIGGER);
+      pingResultChar  = await service.getCharacteristic(UUID_PING_RESULT);
 
       await loadAllValues();
 
@@ -625,6 +651,56 @@
   });
   els.useLocationBtn.addEventListener('click', useCurrentLocation);
   els.viewMapBtn.addEventListener('click', openInMaps);
+
+  document.getElementById('pingBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('pingBtn');
+    const result = document.getElementById('pingResult');
+    if (!pingTriggerChar || !pingResultChar) {
+      result.textContent = 'Connect to a bin first.';
+      result.style.color = 'var(--warn)';
+      return;
+    }
+    btn.disabled = true;
+    result.style.color = 'var(--text-muted)';
+    result.textContent = '⏳ Pinging…';
+
+    try {
+      // Subscribe to notifications so we get the result as soon as it arrives
+      await pingResultChar.startNotifications();
+      const gotResult = new Promise(resolve => {
+        pingResultChar.addEventListener('characteristicvaluechanged', e => {
+          resolve(decoder.decode(e.target.value.buffer));
+        }, { once: true });
+      });
+
+      // Trigger the ping
+      await pingTriggerChar.writeValue(encoder.encode('1'));
+
+      // Wait for the result (up to 8 seconds)
+      const timeout = new Promise(resolve => setTimeout(() => resolve(null), 8000));
+      const value = await Promise.race([gotResult, timeout]);
+
+      if (value === null) {
+        result.textContent = '⏱ No result received (did the BLE connection drop?)';
+        result.style.color = 'var(--warn)';
+      } else if (value.startsWith('TIMEOUT')) {
+        result.innerHTML = '✗ &nbsp;TIMEOUT — no LoRa receiver in range';
+        result.style.color = 'var(--warn)';
+      } else if (value.startsWith('ERROR')) {
+        result.textContent = '✗ ' + value;
+        result.style.color = 'var(--warn)';
+      } else {
+        result.innerHTML = '✓ &nbsp;' + value;
+        result.style.color = 'var(--ok)';
+      }
+    } catch (err) {
+      result.textContent = 'Ping failed: ' + err.message;
+      result.style.color = 'var(--warn)';
+    } finally {
+      try { await pingResultChar.stopNotifications(); } catch (_) {}
+      btn.disabled = false;
+    }
+  });
   document.querySelectorAll('[data-save]').forEach(btn => {
     btn.addEventListener('click', () => saveField(btn.getAttribute('data-save')));
   });
