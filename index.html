@@ -346,6 +346,15 @@
       </div>
 
       <div class="field">
+        <label class="field-label" for="inBlind">Blind bin — write "1" to mark as blind (always collected), "0" for normal</label>
+        <div class="field-row">
+          <input type="text" id="inBlind" maxlength="1" placeholder="0">
+          <button class="btn-small" data-save="blind">Save</button>
+        </div>
+        <div class="save-state" data-savestate="blind">Saved</div>
+      </div>
+
+      <div class="field">
         <label class="field-label" for="inBinSize">Bin size (liters)</label>
         <div class="field-row">
           <input type="text" id="inBinSize" inputmode="numeric" maxlength="7">
@@ -430,6 +439,7 @@
   const UUID_FULL_THRESHOLD = "19b1000a-e8f2-537e-4f6c-d104768a1214";
   const UUID_PING_TRIGGER   = "19b1000b-e8f2-537e-4f6c-d104768a1214";
   const UUID_PING_RESULT    = "19b1000c-e8f2-537e-4f6c-d104768a1214";
+  const UUID_BLIND          = "19b1000d-e8f2-537e-4f6c-d104768a1214";
 
   const decoder = new TextDecoder('utf-8');
   const encoder = new TextEncoder();
@@ -457,6 +467,7 @@
     binSize:       { input: document.getElementById('inBinSize'),        uuid: UUID_BIN_SIZE,       char: null },
     binNumber:     { input: document.getElementById('inBinNumber'),      uuid: UUID_BIN_NUMBER,     char: null },
     fullThreshold: { input: document.getElementById('inFullThreshold'),  uuid: UUID_FULL_THRESHOLD, char: null },
+    blind:         { input: document.getElementById('inBlind'),          uuid: UUID_BLIND,          char: null },
     gpsLat:        { input: document.getElementById('inGpsLat'),         uuid: UUID_GPS_LAT,        char: null },
     gpsLon:        { input: document.getElementById('inGpsLon'),         uuid: UUID_GPS_LON,        char: null },
     streetAddress: { input: document.getElementById('inStreetAddress'),  uuid: UUID_STREET,         char: null },
