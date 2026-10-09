@@ -673,7 +673,27 @@
     }
     btn.disabled = true;
     result.style.color = 'var(--text-muted)';
-    result.textContent = '⏳ Pinging…';
+    result.textContent = '📍 Getting location…';
+
+    // Try to get the browser's GPS before triggering the ping.
+    // On success we send "lat,lon" to the firmware so it uses the browser
+    // coordinates for this ping only (no EEPROM write).
+    // On failure we fall back to "1" which makes the firmware use its stored GPS.
+    let triggerPayload = '1';
+    let gpsLabel = '';
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject,
+          { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 });
+      });
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+      triggerPayload = `${lat},${lon}`;
+      gpsLabel = ` 📍 ${lat}, ${lon}`;
+      result.textContent = `📍 Location: ${lat}, ${lon} — pinging…`;
+    } catch (_) {
+      result.textContent = '⏳ Pinging… (no GPS)';
+    }
 
     try {
       // Subscribe to notifications so we get the result as soon as it arrives
@@ -684,11 +704,11 @@
         }, { once: true });
       });
 
-      // Trigger the ping
-      await pingTriggerChar.writeValue(encoder.encode('1'));
+      // Trigger the ping (with GPS override if available)
+      await pingTriggerChar.writeValue(encoder.encode(triggerPayload));
 
-      // Wait for the result (up to 8 seconds)
-      const timeout = new Promise(resolve => setTimeout(() => resolve(null), 8000));
+      // Wait for the result (up to 10 s — GPS can consume up to 6 s)
+      const timeout = new Promise(resolve => setTimeout(() => resolve(null), 10000));
       const value = await Promise.race([gotResult, timeout]);
 
       if (value === null) {
@@ -701,7 +721,7 @@
         result.textContent = '✗ ' + value;
         result.style.color = 'var(--warn)';
       } else {
-        result.innerHTML = '✓ &nbsp;' + value;
+        result.innerHTML = '✓ &nbsp;' + value + (gpsLabel ? `<br><small style="color:var(--text-muted)">${gpsLabel}</small>` : '');
         result.style.color = 'var(--ok)';
       }
     } catch (err) {
