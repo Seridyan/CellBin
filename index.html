@@ -345,7 +345,19 @@
       <div class="field">
         <label class="field-label" for="inBinType">Bin type</label>
         <div class="field-row">
-          <input type="text" id="inBinType" maxlength="15">
+          <select id="inBinType">
+            <option value="">— select —</option>
+            <option value="WASTE">Kehricht (general waste)</option>
+            <option value="PAPER">Papier (paper)</option>
+            <option value="CARTON">Karton (cardboard)</option>
+            <option value="PET">PET</option>
+            <option value="GLASS">Glas (glass)</option>
+            <option value="METAL">Metall (metal)</option>
+            <option value="BIO">Bio</option>
+            <option value="GREEN">Grüngut (green waste)</option>
+            <option value="TEXTILE">Textil (textiles)</option>
+            <option value="SPECIAL">Sonder (special waste)</option>
+          </select>
           <button class="btn-small" data-save="binType">Save</button>
         </div>
         <div class="save-state" data-savestate="binType">Saved</div>
